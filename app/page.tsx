@@ -228,7 +228,7 @@ export default function Home() {
                   </a>
                 </li>
                 <li>
-                  <a href="https://github.com/yourusername/tabgenius" className="hover:text-cyan-400">
+                  <a href="https://github.com/MokshKhemka/MusictoTab/tree/main" className="hover:text-cyan-400">
                     GitHub
                   </a>
                 </li>
