@@ -1,251 +1,418 @@
 "use client"
 
-import type React from "react"
-
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
+import { useState, useCallback } from "react"
 import { Card } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Upload, X, Eye, Download, Image, Type } from "lucide-react"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Upload, FileUp, FileText, Settings, Download } from "lucide-react"
+import { Textarea } from "@/components/ui/textarea"
 
-export default function MusicConverter() {
-  const [isDragging, setIsDragging] = useState(false)
-  const [isConverting, setIsConverting] = useState(false)
-  const [isConverted, setIsConverted] = useState(false)
+// Note to tab mapping
+const noteToTab: { [key: string]: string } = {
+  'C': '0',
+  'D': '2',
+  'E': '0',
+  'F': '1',
+  'G': '3',
+  'A': '0',
+  'B': '2'
+}
 
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault()
-    setIsDragging(true)
-  }
+// Helper: note name to MIDI number
+const NOTE_TO_MIDI: { [key: string]: number } = {
+  'c': 0, 'c#': 1, 'db': 1, 'd': 2, 'd#': 3, 'eb': 3, 'e': 4, 'f': 5, 'f#': 6, 'gb': 6, 'g': 7, 'g#': 8, 'ab': 8, 'a': 9, 'a#': 10, 'bb': 10, 'b': 11
+}
 
-  const handleDragLeave = () => {
-    setIsDragging(false)
-  }
+// Standard tuning: [string name, open note name, open note octave]
+const STRING_TUNING: [string, string, number][] = [
+  ['e', 'e', 4], // high e
+  ['B', 'b', 3],
+  ['G', 'g', 3],
+  ['D', 'd', 3],
+  ['A', 'a', 2],
+  ['E', 'e', 2], // low E
+]
 
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault()
-    setIsDragging(false)
-    // Simulate file upload
-    simulateConversion()
-  }
+function noteToMidi(note: string, octave: number) {
+  return 12 * (octave + 1) + NOTE_TO_MIDI[note.toLowerCase()]
+}
 
-  const handleFileUpload = () => {
-    // Simulate file upload
-    simulateConversion()
-  }
+function parseNoteInput(input: string): {note: string, accidental: string, octave: number} | null {
+  // e.g., f#4, bb3, e4
+  const match = input.match(/^([a-gA-G])([#b]?)(\d)$/)
+  if (!match) return null
+  const [, note, accidental, octave] = match
+  return { note: note.toLowerCase() + accidental.toLowerCase(), accidental, octave: parseInt(octave, 10) }
+}
 
-  const simulateConversion = () => {
-    setIsConverting(true)
-    // Simulate processing time
-    setTimeout(() => {
-      setIsConverting(false)
-      setIsConverted(true)
-    }, 2000)
-  }
-
+// Tab display component
+function TabDisplay({ tabs }: { tabs: string[] }) {
   return (
-    <Card className="bg-gray-900/50 border-gray-800 backdrop-blur-sm overflow-hidden">
-      <Tabs defaultValue="upload" className="w-full">
-        <div className="border-b border-gray-800">
-          <TabsList className="bg-transparent w-full justify-start px-4 h-16">
-            <TabsTrigger value="upload" className="data-[state=active]:bg-gray-800">
-              <Upload className="mr-2 h-4 w-4" />
-              Upload
-            </TabsTrigger>
-            <TabsTrigger value="editor" className="data-[state=active]:bg-gray-800">
-              <FileText className="mr-2 h-4 w-4" />
-              Editor
-            </TabsTrigger>
-            <TabsTrigger value="settings" className="data-[state=active]:bg-gray-800">
-              <Settings className="mr-2 h-4 w-4" />
-              Settings
-            </TabsTrigger>
-          </TabsList>
+    <pre className="font-mono text-lg leading-7 bg-transparent p-0 m-0">
+      {tabs.map((line, i) => (
+        <div key={i} style={{ whiteSpace: 'pre' }}>
+          {line}
         </div>
-
-        <TabsContent value="upload" className="p-0 m-0">
-          <div className="p-6">
-            <div
-              className={`border-2 border-dashed rounded-lg p-12 text-center transition-colors ${isDragging ? "border-cyan-500 bg-cyan-500/10" : "border-gray-700 hover:border-gray-600"}`}
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-            >
-              <div className="flex flex-col items-center justify-center">
-                <div className="h-16 w-16 rounded-full bg-gray-800 flex items-center justify-center mb-4">
-                  <FileUp className="h-8 w-8 text-cyan-400" />
-                </div>
-                <h3 className="text-xl font-bold mb-2">Upload Your Sheet Music</h3>
-                <p className="text-gray-400 mb-6 max-w-md">
-                  Drag and drop your sheet music file here, or click to browse. We support PDF, PNG, JPG, and MusicXML
-                  formats.
-                </p>
-                <Button onClick={handleFileUpload}>Select File</Button>
-              </div>
-            </div>
-
-            {isConverting && (
-              <div className="mt-8">
-                <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
-                  <div className="h-full bg-gradient-to-r from-cyan-500 to-purple-600 w-2/3 animate-pulse"></div>
-                </div>
-                <div className="mt-4 text-center text-gray-400">
-                  Converting your sheet music... This may take a few moments.
-                </div>
-              </div>
-            )}
-
-            {isConverted && (
-              <div className="mt-8">
-                <Card className="bg-gray-800 border-gray-700 p-6">
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="font-bold">Conversion Complete</h3>
-                    <Button size="sm" variant="outline" className="gap-2">
-                      <Download className="h-4 w-4" />
-                      Download
-                    </Button>
-                  </div>
-
-                  <div className="bg-black rounded p-4 font-mono text-sm text-gray-300 overflow-x-auto">
-                    <pre>{`e|-------0--------|-------3--------|
-B|-----0---0------|-----0---0------|
-G|---0-------0----|---0-------0----|
-D|-2-------------0|-0--------------|
-A|-----------------|----------------|
-E|-----------------|----------------|`}</pre>
-                  </div>
-
-                  <div className="mt-4 flex justify-between">
-                    <Button variant="outline" size="sm">
-                      Preview
-                    </Button>
-                    <Button variant="outline" size="sm">
-                      Edit
-                    </Button>
-                  </div>
-                </Card>
-              </div>
-            )}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="editor" className="p-0 m-0">
-          <div className="p-6 min-h-[400px] flex items-center justify-center">
-            <div className="text-center text-gray-400">
-              <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <h3 className="text-xl font-bold mb-2">Music Notation Editor</h3>
-              <p className="max-w-md mx-auto mb-4">
-                Our interactive editor allows you to create or modify sheet music directly in your browser.
-              </p>
-              <Button>Launch Editor</Button>
-            </div>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="settings" className="p-0 m-0">
-          <div className="p-6 min-h-[400px]">
-            <h3 className="text-xl font-bold mb-4">Conversion Settings</h3>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card className="bg-gray-800 border-gray-700 p-4">
-                <h4 className="font-medium mb-3">Instrument Configuration</h4>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm text-gray-400 mb-1">Instrument Type</label>
-                    <select className="w-full bg-gray-900 border border-gray-700 rounded p-2">
-                      <option>Guitar (Standard Tuning)</option>
-                      <option>Guitar (Drop D)</option>
-                      <option>Bass (4 String)</option>
-                      <option>Ukulele</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm text-gray-400 mb-1">String Count</label>
-                    <select className="w-full bg-gray-900 border border-gray-700 rounded p-2">
-                      <option>6 Strings</option>
-                      <option>7 Strings</option>
-                      <option>4 Strings</option>
-                    </select>
-                  </div>
-                </div>
-              </Card>
-
-              <Card className="bg-gray-800 border-gray-700 p-4">
-                <h4 className="font-medium mb-3">Conversion Options</h4>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm text-gray-400 mb-1">Difficulty Level</label>
-                    <select className="w-full bg-gray-900 border border-gray-700 rounded p-2">
-                      <option>Beginner-Friendly</option>
-                      <option>Intermediate</option>
-                      <option>Advanced</option>
-                      <option>Exact Transcription</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm text-gray-400 mb-1">Notation Style</label>
-                    <select className="w-full bg-gray-900 border border-gray-700 rounded p-2">
-                      <option>Standard Tab</option>
-                      <option>Tab + Rhythm</option>
-                      <option>Tab + Standard Notation</option>
-                    </select>
-                  </div>
-                </div>
-              </Card>
-
-              <Card className="bg-gray-800 border-gray-700 p-4">
-                <h4 className="font-medium mb-3">Output Format</h4>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm text-gray-400 mb-1">File Format</label>
-                    <select className="w-full bg-gray-900 border border-gray-700 rounded p-2">
-                      <option>PDF</option>
-                      <option>Guitar Pro</option>
-                      <option>Plain Text</option>
-                      <option>MusicXML</option>
-                    </select>
-                  </div>
-                </div>
-              </Card>
-
-              <Card className="bg-gray-800 border-gray-700 p-4">
-                <h4 className="font-medium mb-3">Advanced Settings</h4>
-                <div className="space-y-4">
-                  <div className="flex items-center">
-                    <input type="checkbox" id="include-fingering" className="mr-2" />
-                    <label htmlFor="include-fingering" className="text-sm">
-                      Include fingering suggestions
-                    </label>
-                  </div>
-
-                  <div className="flex items-center">
-                    <input type="checkbox" id="optimize-playability" className="mr-2" />
-                    <label htmlFor="optimize-playability" className="text-sm">
-                      Optimize for playability
-                    </label>
-                  </div>
-
-                  <div className="flex items-center">
-                    <input type="checkbox" id="include-techniques" className="mr-2" />
-                    <label htmlFor="include-techniques" className="text-sm">
-                      Include playing techniques
-                    </label>
-                  </div>
-                </div>
-              </Card>
-            </div>
-
-            <div className="mt-6 flex justify-end">
-              <Button variant="outline" className="mr-2">
-                Reset to Default
-              </Button>
-              <Button>Save Settings</Button>
-            </div>
-          </div>
-        </TabsContent>
-      </Tabs>
-    </Card>
+      ))}
+    </pre>
   )
 }
+
+// Convert text input to tabs
+function convertTextToTabs(text: string): string[] {
+  const notes = text.split(/[\s,]+/).filter(note => note.trim())
+  // Build a tab line for each string
+  const tabLines = STRING_TUNING.map(([stringName]) => stringName + '|')
+
+  notes.forEach(input => {
+    const parsed = parseNoteInput(input)
+    if (!parsed) {
+      // Invalid note, put dash on all strings
+      for (let i = 0; i < tabLines.length; i++) tabLines[i] += '-'
+      return
+    }
+    const midi = noteToMidi(parsed.note, parsed.octave)
+    // Find all possible strings/frets
+    let bestString = -1
+    let bestFret = 100
+    STRING_TUNING.forEach(([stringName, openNote, openOctave], idx) => {
+      const stringMidi = noteToMidi(openNote, openOctave)
+      const fret = midi - stringMidi
+      if (fret >= 0 && fret <= 24) { // 24 frets max
+        // Prefer lower string if fret is the same or lower
+        if (
+          fret < bestFret ||
+          (fret === bestFret && idx > bestString)
+        ) {
+          bestString = idx
+          bestFret = fret
+        }
+      }
+    })
+    for (let i = 0; i < tabLines.length; i++) {
+      if (i === bestString) {
+        tabLines[i] += bestFret + '-'
+      } else {
+        tabLines[i] += '-'
+      }
+    }
+  })
+  return tabLines.map(line => line + '|')
+}
+
+// Fake image-to-notes function for MVP
+function fakeImageToNotes(_img: File): string[] {
+  // For demo: return a hardcoded or random sequence
+  const demoSequences = [
+    ['e4', 'g4', 'c4', 'd4', 'e4'],
+    ['a3', 'b3', 'c4', 'd4', 'e4'],
+    ['e4', 'e4', 'b3', 'g4', 'e4'],
+    ['c4', 'e4', 'g4', 'c5'],
+  ]
+  // Pick one at random
+  return demoSequences[Math.floor(Math.random() * demoSequences.length)]
+}
+
+export default function MusicConverter() {
+  const [file, setFile] = useState<File | null>(null)
+  const [preview, setPreview] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [tabs, setTabs] = useState<string[] | null>(null)
+  const [isProcessing, setIsProcessing] = useState(false)
+  const [textInput, setTextInput] = useState("")
+  const [activeTab, setActiveTab] = useState("image")
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    const droppedFile = e.dataTransfer.files[0]
+    if (droppedFile && (droppedFile.type === "image/png" || droppedFile.type === "image/jpeg")) {
+      setFile(droppedFile)
+      const reader = new FileReader()
+      reader.onload = (e) => setPreview(e.target?.result as string)
+      reader.readAsDataURL(droppedFile)
+    } else {
+      setError("Please upload a PNG or JPG image")
+    }
+  }, [])
+
+  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0]
+    if (selectedFile && (selectedFile.type === "image/png" || selectedFile.type === "image/jpeg")) {
+      setFile(selectedFile)
+      const reader = new FileReader()
+      reader.onload = (e) => setPreview(e.target?.result as string)
+      reader.readAsDataURL(selectedFile)
+    } else {
+      setError("Please upload a PNG or JPG image")
+    }
+  }, [])
+
+  const handleConvert = useCallback(async () => {
+    if (activeTab === "image" && !file) return
+    if (activeTab === "text" && !textInput.trim()) {
+      setError("Please enter some notes")
+      return
+    }
+
+    try {
+      setIsProcessing(true)
+      setError(null)
+
+      if (activeTab === "image") {
+        // Fake image-to-notes for MVP
+        const detectedNotes = fakeImageToNotes(file!)
+        const tabStrings = convertTextToTabs(detectedNotes.join(' '))
+        setTabs(tabStrings)
+      } else {
+        // Convert text input to tabs
+        const tabStrings = convertTextToTabs(textInput)
+        setTabs(tabStrings)
+      }
+    } catch (err) {
+      setError("Error processing input. Please try again.")
+      console.error(err)
+    } finally {
+      setIsProcessing(false)
+    }
+  }, [file, textInput, activeTab])
+
+  const handleClear = useCallback(() => {
+    if (activeTab === "image") {
+      setFile(null)
+      setPreview(null)
+    } else {
+      setTextInput("")
+    }
+    setError(null)
+    setTabs(null)
+  }, [activeTab])
+
+  const handleDownload = useCallback((format: 'png' | 'jpeg') => {
+    if (!tabs) return
+
+    // Create a canvas element
+    const canvas = document.createElement('canvas')
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+
+    // Set canvas size
+    canvas.width = 800
+    canvas.height = 400
+
+    // Fill background
+    ctx.fillStyle = '#1f2937'
+    ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+    // Set text style
+    ctx.font = '24px monospace'
+    ctx.fillStyle = '#ffffff'
+    ctx.textAlign = 'center'
+
+    // Draw tabs
+    const lineHeight = 40
+    const startY = 50
+    tabs.forEach((line, i) => {
+      // Draw string name
+      ctx.fillStyle = '#22d3ee'
+      ctx.textAlign = 'left'
+      ctx.fillText(line[0], 20, startY + i * lineHeight)
+
+      // Draw tab lines and numbers
+      ctx.fillStyle = '#ffffff'
+      ctx.textAlign = 'center'
+      const chars = line.slice(2, -1).split('')
+      const charWidth = (canvas.width - 100) / chars.length
+      chars.forEach((char, j) => {
+        const x = 100 + j * charWidth
+        const y = startY + i * lineHeight
+        if (char !== '-') {
+          ctx.fillText(char, x, y)
+        }
+        // Draw horizontal line
+        ctx.beginPath()
+        ctx.strokeStyle = '#4b5563'
+        ctx.moveTo(50, y + 5)
+        ctx.lineTo(canvas.width - 50, y + 5)
+        ctx.stroke()
+      })
+    })
+
+    // Convert to image and download
+    const link = document.createElement('a')
+    link.download = `guitar-tabs.${format}`
+    link.href = canvas.toDataURL(`image/${format}`)
+    link.click()
+  }, [tabs])
+
+  return (
+    <div className="max-w-4xl mx-auto">
+      <Card className="p-8 bg-gray-900/50 border-gray-800 backdrop-blur-sm">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-2 mb-8">
+            <TabsTrigger value="image" className="flex items-center gap-2">
+              <Image className="h-4 w-4" />
+              Image Upload
+            </TabsTrigger>
+            <TabsTrigger value="text" className="flex items-center gap-2">
+              <Type className="h-4 w-4" />
+              Text Input
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="image">
+            <div
+              className="border-2 border-dashed border-gray-700 rounded-lg p-8 text-center"
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={handleDrop}
+            >
+              {!preview ? (
+                <div className="space-y-4">
+                  <div className="flex justify-center">
+                    <div className="h-16 w-16 rounded-full bg-cyan-500/20 flex items-center justify-center">
+                      <Upload className="h-8 w-8 text-cyan-400" />
+                    </div>
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-medium mb-2">Upload Sheet Music</h3>
+                    <p className="text-gray-400 mb-4">
+                      Drag and drop your sheet music image, or click to browse
+                    </p>
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg"
+                      onChange={handleFileSelect}
+                      className="hidden"
+                      id="file-upload"
+                    />
+                    <Button
+                      onClick={() => document.getElementById("file-upload")?.click()}
+                      className="bg-cyan-500 hover:bg-cyan-600"
+                    >
+                      Select File
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="relative">
+                    <img
+                      src={preview}
+                      alt="Sheet music preview"
+                      className="max-h-96 mx-auto rounded-lg"
+                    />
+                    <button
+                      onClick={handleClear}
+                      className="absolute top-2 right-2 p-1 rounded-full bg-gray-900/80 hover:bg-gray-800"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                  <Button
+                    onClick={handleConvert}
+                    disabled={isProcessing}
+                    className="bg-cyan-500 hover:bg-cyan-600"
+                  >
+                    {isProcessing ? "Processing..." : "Convert to Tabs"}
+                  </Button>
+                </div>
+              )}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="text">
+            <div className="space-y-4">
+              <div className="border-2 border-gray-700 rounded-lg p-4">
+                <Textarea
+                  value={textInput}
+                  onChange={(e) => setTextInput(e.target.value)}
+                  placeholder="Enter notes (e.g., e4, b2, f#3, etc.)"
+                  className="min-h-[200px] font-mono"
+                />
+                <p className="text-sm text-gray-400 mt-2">
+                  Enter notes in the format: string+fret (e.g., e4, b2, f#3). Separate notes with spaces or commas.
+                </p>
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="outline"
+                  onClick={handleClear}
+                >
+                  Clear
+                </Button>
+                <Button
+                  onClick={handleConvert}
+                  disabled={isProcessing}
+                  className="bg-cyan-500 hover:bg-cyan-600"
+                >
+                  {isProcessing ? "Processing..." : "Convert to Tabs"}
+                </Button>
+              </div>
+            </div>
+          </TabsContent>
+        </Tabs>
+
+        {error && (
+          <div className="mt-4 p-4 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400">
+            {error}
+          </div>
+        )}
+
+        {tabs && (
+          <div className="mt-8">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-medium">Generated Tabs</h3>
+              <div className="flex gap-2">
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <Eye className="h-4 w-4 mr-2" />
+                      Preview
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-4xl">
+                    <DialogHeader>
+                      <DialogTitle>Tab Preview</DialogTitle>
+                    </DialogHeader>
+                    <div className="bg-gray-800/50 p-6 rounded-lg overflow-auto max-h-[80vh]">
+                      <TabDisplay tabs={tabs} />
+                    </div>
+                  </DialogContent>
+                </Dialog>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleDownload('png')}
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  PNG
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleDownload('jpeg')}
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  JPEG
+                </Button>
+              </div>
+            </div>
+            <div className="bg-gray-800/50 p-6 rounded-lg">
+              <TabDisplay tabs={tabs} />
+            </div>
+            <p className="mt-4 text-sm text-gray-400">
+              Note: This is a demonstration output. The actual conversion will be implemented in future updates.
+            </p>
+          </div>
+        )}
+      </Card>
+    </div>
+  )
+}
+
