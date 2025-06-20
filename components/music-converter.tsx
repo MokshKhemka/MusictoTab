@@ -139,7 +139,7 @@ export default function MusicConverter() {
       reader.readAsDataURL(droppedFile)
     } else {
       setError("Please upload a PNG or JPG image")
-    }
+  }
   }, [])
 
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -174,7 +174,7 @@ export default function MusicConverter() {
         // Convert text input to tabs
         const tabStrings = convertTextToTabs(textInput)
         setTabs(tabStrings)
-      }
+  }
     } catch (err) {
       setError("Error processing input. Please try again.")
       console.error(err)
@@ -361,12 +361,12 @@ export default function MusicConverter() {
         {error && (
           <div className="mt-4 p-4 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400">
             {error}
-          </div>
-        )}
+              </div>
+            )}
 
         {tabs && (
-          <div className="mt-8">
-            <div className="flex justify-between items-center mb-4">
+              <div className="mt-8">
+                  <div className="flex justify-between items-center mb-4">
               <h3 className="text-lg font-medium">Generated Tabs</h3>
               <div className="flex gap-2">
                 <Dialog>
@@ -400,7 +400,7 @@ export default function MusicConverter() {
                 >
                   <Download className="h-4 w-4 mr-2" />
                   JPEG
-                </Button>
+                    </Button>
               </div>
             </div>
             <div className="bg-gray-800/50 p-6 rounded-lg">
@@ -411,7 +411,7 @@ export default function MusicConverter() {
             </p>
           </div>
         )}
-      </Card>
+    </Card>
     </div>
   )
 }
