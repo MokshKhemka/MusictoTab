@@ -65,10 +65,17 @@ function TabDisplay({ tabs }: { tabs: string[] }) {
   )
 }
 
+// BETA: This function is a placeholder for image-to-notes detection.
+// It always returns the same sequence for demo consistency.
+function fakeImageToNotes(_img: File): string[] {
+  // Always return the same sequence for consistent demo output
+  return ['e4', 'g4', 'c4', 'd4', 'e4', 'b3'];
+}
+
 // Convert text input to tabs
 function convertTextToTabs(text: string): string[] {
   const notes = text.split(/[\s,]+/).filter(note => note.trim())
-  // Build a tab line for each string
+  // Always use 6 lines for standard tuning
   const tabLines = STRING_TUNING.map(([stringName]) => stringName + '|')
 
   notes.forEach(input => {
@@ -104,20 +111,8 @@ function convertTextToTabs(text: string): string[] {
       }
     }
   })
+  // Always return 6 lines, even if empty
   return tabLines.map(line => line + '|')
-}
-
-// Fake image-to-notes function for MVP
-function fakeImageToNotes(_img: File): string[] {
-  // For demo: return a hardcoded or random sequence
-  const demoSequences = [
-    ['e4', 'g4', 'c4', 'd4', 'e4'],
-    ['a3', 'b3', 'c4', 'd4', 'e4'],
-    ['e4', 'e4', 'b3', 'g4', 'e4'],
-    ['c4', 'e4', 'g4', 'c5'],
-  ]
-  // Pick one at random
-  return demoSequences[Math.floor(Math.random() * demoSequences.length)]
 }
 
 export default function MusicConverter() {

@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button"
 import MusicConverter from "@/components/music-converter"
+import { useState } from "react"
 
 export default function Home() {
   return (
@@ -27,10 +28,13 @@ export default function Home() {
           </div>
         </section>
 
+        {/* Text to Tabs Section */}
+        <TextToTabsBox />
+
         {/* Blocky Converter Tool */}
         <section id="converter" className="w-full bg-gray-100 border-2 border-black p-8 mb-8">
-          <h2 className="text-2xl font-bold mb-2">Convert Sheet Music to Tabs</h2>
-          <p className="mb-4">Upload your sheet music and get instant guitar tablature. Beta version, basic melodies only.</p>
+          <h2 className="text-2xl font-bold mb-2 flex items-center gap-2">Image to Tabs <span className="bg-yellow-300 text-black px-2 py-1 text-xs font-bold border border-black ml-2">BETA</span></h2>
+          <p className="mb-4 text-red-700 font-semibold">I'm still working on this feature; The basic capability is there but please use the text input for better results. Thanks </p>
           <MusicConverter />
         </section>
 
@@ -87,4 +91,96 @@ export default function Home() {
       </div>
     </main>
   )
+}
+
+function TextToTabsBox() {
+  const [input, setInput] = useState("");
+  const [tabs, setTabs] = useState<string[]>(["E|--------|", "A|--------|", "D|--------|", "G|--------|", "B|--------|", "e|--------|"]);
+
+  // Mapping: note name (case-insensitive) to [string index, fret number]
+  const noteToTab: Record<string, [number, number]> = {
+    "e": [0, 0], // 6th string open
+    "a": [1, 0], // 5th string open
+    "d": [2, 0], // 4th string open
+    "g": [3, 0], // 3rd string open
+    "b": [4, 0], // 2nd string open
+    "e1": [5, 0], // 1st string open (use e1 for 1st string)
+    "f": [0, 1], // F: 1st fret, 6th string
+    "b2": [1, 2], // B: 2nd fret, 5th string
+    "c2": [4, 1], // C: 1st fret, 2nd string
+    "f1": [5, 1], // F: 1st fret, 1st string
+    "g3": [0, 3], // G: 3rd fret, 6th string
+    "c3": [1, 3], // C: 3rd fret, 5th string
+    "e2": [2, 2], // E: 2nd fret, 4th string
+    "f3": [2, 3], // F: 3rd fret, 4th string
+    "a2": [3, 2], // A: 2nd fret, 3rd string
+    "d3": [4, 3], // D: 3rd fret, 2nd string
+    "g1": [5, 3], // G: 3rd fret, 1st string
+  };
+
+  // Standard tuning string names (from low E to high E)
+  const stringNames = ["E", "A", "D", "G", "B", "e"];
+
+  function handleConvert() {
+    const notes = input.split(/[\s,]+/).filter(Boolean);
+    // Start with empty tab lines
+    const tabLines = stringNames.map((name) => name + "|");
+    let foundAny = false;
+    notes.forEach((noteRaw) => {
+      const note = noteRaw.trim().toLowerCase();
+      let mapping = noteToTab[note];
+      if (!mapping) {
+        // Try open string (e, a, d, g, b, e1)
+        if (["e", "a", "d", "g", "b", "e1"].includes(note)) {
+          mapping = noteToTab[note];
+        }
+      }
+      if (mapping) {
+        foundAny = true;
+        for (let i = 0; i < tabLines.length; i++) {
+          if (i === mapping[0]) {
+            tabLines[i] += mapping[1] + "-";
+          } else {
+            tabLines[i] += "-";
+          }
+        }
+      } else {
+        // Unknown note, put dash on all strings
+        for (let i = 0; i < tabLines.length; i++) {
+          tabLines[i] += "-";
+        }
+      }
+    });
+    // If no notes or all unrecognized, show all dashes
+    if (notes.length === 0 || !foundAny) {
+      setTabs(["E|--------|", "A|--------|", "D|--------|", "G|--------|", "B|--------|", "e|--------|"]);
+    } else {
+      setTabs(tabLines.map((line) => line + "|"));
+    }
+  }
+
+  return (
+    <section id="text-to-tabs" className="w-full bg-gray-100 border-2 border-black p-8 mb-8">
+      <h2 className="text-2xl font-bold mb-2">Text to Tabs</h2>
+      <p className="mb-4">Paste or type your notes below to generate guitar tabs instantly.</p>
+      <textarea
+        className="w-full border-2 border-black p-2 mb-4 bg-white text-black"
+        rows={4}
+        placeholder="Type notes here (e.g., E, F, G3, C2, etc.)..."
+        value={input}
+        onChange={(e) => setInput(e.target.value)}
+      />
+      <button
+        className="bg-gray-400 border border-black text-black px-4 py-2 shadow-none rounded-none"
+        onClick={handleConvert}
+      >
+        Convert to Tabs
+      </button>
+      <div className="mt-6 bg-white border-2 border-black p-4 font-mono text-lg">
+        {tabs.map((line, i) => (
+          <div key={i} style={{ whiteSpace: "pre" }}>{line}</div>
+        ))}
+      </div>
+    </section>
+  );
 }
